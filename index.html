@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Porvoon sää – Reaaliaikainen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #11192b;
+      --muted: #9bb0d3;
+      --text: #eaf1ff;
+      --accent: #4cc9f0;
+      --accent-2: #a1f0d8;
+      --danger: #ff6b6b;
+      --ok: #4caf50;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 500px at 70% 10%, #16223b 0%, var(--bg) 40%, #070d18 100%);
+      min-height: 100vh;
+    }
+    header {
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      background: linear-gradient(180deg, rgba(11,18,32,0.9), rgba(11,18,32,0.6));
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 10;
+    }
+    .logo {
+      width: 42px; height: 42px; border-radius: 10px;
+      background: conic-gradient(from 180deg, #4cc9f0, #a1f0d8, #4cc9f0);
+      box-shadow: 0 0 20px rgba(76,201,240,0.35);
+    }
+    .title { font-weight: 700; font-size: 20px; }
+    .subtitle { color: var(--muted); font-size: 13px; }
+
+    main { padding: 28px 20px 40px; max-width: 1100px; margin: 0 auto; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 22px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(17,25,43,0.9), rgba(17,25,43,0.75));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      letter-spacing: 0.2px;
+    }
+
+    .current {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+    .temp {
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .feels { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    .meta {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      margin-top: 8px;
+    }
+    .stat {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .label { color: var(--muted); font-size: 12px; }
+    .value { font-weight: 600; margin-top: 4px; }
+
+    .icon-wrap {
+      display: flex; align-items: center; gap: 10px;
+      margin-top: 10px;
+    }
+    .icon-wrap img {
+      width: 56px; height: 56px; image-rendering: -webkit-optimize-contrast;
+      filter: drop-shadow(0 10px 14px rgba(0,0,0,0.35));
+    }
+    .desc { font-weight: 600; text-transform: capitalize; }
+
+    .charts {
+      display: grid; grid-template-columns: 1fr; gap: 16px;
+      margin-top: 12px;
+    }
+    .canvas-card { padding: 14px; border-radius: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06); }
+    canvas { width: 100%; height: 240px; }
+
+    .footer {
+      margin-top: 22px; display: flex; gap: 12px; align-items: center; color: var(--muted); font-size: 12px;
+    }
+    .badge {
+      padding: 6px 10px; border-radius: 999px; background: rgba(76,201,240,0.12);
+      border: 1px solid rgba(76,201,240,0.35); color: #baf1ff; font-weight: 600;
+    }
+    .updated { margin-left: auto; }
+    .city-search {
+      display: flex; gap: 10px; margin-top: 8px;
+    }
+    .city-search input {
+      flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06); color: var(--text);
+    }
+    .city-search button {
+      padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+      background: linear-gradient(180deg, #2a7fb1, #1c5a7a); color: #eaf1ff; font-weight: 600; cursor: pointer;
+    }
+    .map {
+      border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08);
+      height: 300px; background: rgba(255,255,255,0.06);
+    }
+    .notice { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    a { color: #8bd6ff; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo" aria-hidden="true"></div>
+    <div>
+      <div class="title">Porvoon sää</div>
+      <div class="subtitle">Reaaliaikainen tilanne, tuntiennuste ja tyylikäs grafiikka</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <section class="card">
+        <h2>Nykyinen sää</h2>
+
+        <div class="city-search" aria-label="Hae kaupunki">
+          <input id="cityInput" type="text" placeholder="Hae kaupunki (oletus: Porvoo)" />
+          <button id="cityBtn">Hae</button>
+        </div>
+
+        <div class="current">
+          <div>
+            <div class="temp" id="temp">--°C</div>
+            <div class="feels" id="feels">Tuntuu kuin --°C</div>
+            <div class="icon-wrap">
+              <img id="icon" alt="Sääkuvake" src="" />
+              <div class="desc" id="desc">—</div>
+            </div>
+          </div>
+          <div class="meta">
+            <div class="stat">
+              <div class="label">Tuuli</div>
+              <div class="value"><span id="wind">—</span> m/s</div>
+            </div>
+            <div class="stat">
+              <div class="label">Kosteus</div>
+              <div class="value"><span id="humidity">—</span> %</div>
+            </div>
+            <div class="stat">
+              <div class="label">Ilmanpaine</div>
+              <div class="value"><span id="pressure">—</span> hPa</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts">
+          <div class="canvas-card">
+            <h2>Tuntiennuste – lämpötila</h2>
+            <canvas id="tempChart"></canvas>
+          </div>
+          <div class="canvas-card">
+            <h2>Tuntiennuste – tuuli</h2>
+            <canvas id="windChart"></canvas>
+          </div>
+          <div class="canvas-card">
+            <h2>Tuntiennuste – sademäärä</h2>
+            <canvas id="rainChart"></canvas>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span class="badge">Live</span>
+          <span>Data: OpenWeatherMap</span>
+          <span class="updated" id="updated">Päivitetään…</span>
+        </div>
+      </section>
+
+      <aside class="card">
+        <h2>Sijainti ja tutka</h2>
+        <div class="map">
+          <iframe
+            id="mapFrame"
+            title="Kartta"
+            width="100%"
+            height="100%"
+            style="border:0"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://www.openstreetmap.org/export/embed.html?bbox=25.5%2C60.2%2C26.2%2C60.5&layer=mapnik&marker=60.392%2C25.665">
+          </iframe>
+        </div>
+        <p class="notice">
+          Sadetutkaa varten voit lisätä esim. <a href="https://en.ilmatieteenlaitos.fi/weather/rainradar" target="_blank" rel="noopener">Ilmatieteen laitoksen</a> upotteen, jos käyttöehdot sallivat.
+        </p>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const API_KEY = "YOUR_OPENWEATHERMAP_API_KEY"; // ← Vaihda tähän oma avain
+    const DEFAULT_CITY = "Porvoo,FI";
+    let tempChart, windChart, rainChart;
+
+    async function fetchWeather(city = DEFAULT_CITY) {
+      const paramsCurrent = new URLSearchParams({ q: city, appid: API_KEY, units: "metric", lang: "fi" });
+      const paramsForecast = new URLSearchParams({ q: city, appid: API_KEY, units: "metric", lang: "fi" });
+
+      const [currentResp, forecastResp] = await Promise.all([
+        fetch(`https://api.openweathermap.org/data/2.5/weather?${paramsCurrent}`),
+        fetch(`https://api.openweathermap.org/data/2.5/forecast?${paramsForecast}`)
+      ]);
+
+      if (!currentResp.ok || !forecastResp.ok) {
+        throw new Error("Säätietojen haku epäonnistui. Tarkista API-avain ja rajoitukset.");
+      }
+
+      const current = await currentResp.json();
+      const forecast = await forecastResp.json();
+      return { current, forecast };
+    }
+
+    function setCurrentUI(current) {
+      const temp = Math.round(current.main.temp);
+      const feels = Math.round(current.main.feels_like);
+      const wind = Math.round(current.wind.speed * 10) / 10;
+      const humidity = current.main.humidity;
+      const pressure = current.main.pressure;
+      const desc = current.weather?.[0]?.description || "-";
+      const iconCode = current.weather?.[0]?.icon || "01d";
+
+      document.getElementById("temp").textContent = `${temp}°C`;
+      document.getElementById("feels").textContent = `Tuntuu kuin ${feels}°C`;
+      document.getElementById("wind").textContent = wind;
+      document.getElementById("humidity").textContent = humidity;
+      document.getElementById("pressure").textContent = pressure;
+      document.getElementById("desc").textContent = desc;
+      document.getElementById("icon").src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+      document.getElementById("updated").textContent = `Päivitetty ${new Date().toLocaleString("fi-FI")}`;
+
+      // Päivitä kartta markerilla
+      const lat = current.coord.lat;
+      const lon = current.coord.lon;
+      const bbox = `${lon-0.35}%2C${lat-0.15}%2C${lon+0.35}%2C${lat+0.15}`;
+      const marker = `${lat}%2C${lon}`;
+      document.getElementById("mapFrame").src =
+        `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${marker}`;
+    }
+
+    function buildForecastDatasets(forecast) {
+      const labels = forecast.list.map(item =>
+        new Date(item.dt * 1000).toLocaleString("fi-FI", { weekday: "short", hour: "2-digit" })
+      );
+      const temps = forecast.list.map(item => item.main.temp);
+      const winds = forecast.list.map(item => item.wind.speed);
+      const rain = forecast.list.map(item => (item.rain?.["3h"] ?? 0));
+      return { labels, temps, winds, rain };
+    }
+
+    function makeLineChart(ctx, labels, data, color, label) {
+      return new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label,
+            data,
+            borderColor: color,
+            backgroundColor: color + "33",
+            tension: 0.35,
+            fill: true,
+            pointRadius: 2.5,
+            pointHoverRadius: 4,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: "#eaf1ff" } },
+            tooltip: { mode: "index", intersect: false }
+          },
+          scales: {
+            x: { ticks: { color: "#9bb0d3" }, grid: { color: "rgba(255,255,255,0.06)" } },
+            y: { ticks: { color: "#9bb0d3" }, grid: { color: "rgba(255,255,255,0.06)" } }
+          }
+        }
+      });
+    }
+
+    function destroyChart(chart) {
+      if (chart) chart.destroy();
+    }
+
+    async function load(city) {
+      try {
+        document.getElementById("updated").textContent = "Päivitetään…";
+        const { current, forecast } = await fetchWeather(city);
+        setCurrentUI(current);
+        const { labels, temps, winds, rain } = buildForecastDatasets(forecast);
+
+        destroyChart(tempChart);
+        destroyChart(windChart);
+        destroyChart(rainChart);
+
+        tempChart = makeLineChart(document.getElementById("tempChart"), labels, temps, "#4cc9f0", "Lämpötila (°C)");
+        windChart = makeLineChart(document.getElementById("windChart"), labels, winds, "#a1f0d8", "Tuuli (m/s)");
+        rainChart = makeLineChart(document.getElementById("rainChart"), labels, rain, "#8e9af3", "Sade (mm / 3h)");
+      } catch (e) {
+        console.error(e);
+        document.getElementById("updated").textContent = "Virhe päivityksessä. Tarkista API-avain.";
+        alert(e.message);
+      }
+    }
+
+    // Haku-nappi ja Enter
+    document.getElementById("cityBtn").addEventListener("click", () => {
+      const input = document.getElementById("cityInput").value.trim();
+      load(input || DEFAULT_CITY);
+    });
+    document.getElementById("cityInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("cityBtn").click();
+    });
+
+    // Automaattinen päivitys 5 min välein
+    load(DEFAULT_CITY);
+    setInterval(() => load(DEFAULT_CITY), 5 * 60 * 1000);
+  </script>
+</body>
+</html>
